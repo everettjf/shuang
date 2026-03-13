@@ -63,19 +63,35 @@ body {
   margin: 0;
 }
 
+.menu.menu-delay input {
+  width: 42px;
+  margin-left: 4px;
+  font-size: 16px;
+  text-align: center;
+  background-color: #eee;
+  border: dashed #000 1px;
+  height: 23px;
+}
+
+.menu.menu-delay .unit {
+  margin-left: 4px;
+}
+
 /* workspace */
 .workspace {
   margin: auto;
-  width: 300px;
-  height: 150px;
+  width: 100%;
+  max-width: 760px;
+  min-height: 180px;
   display: -webkit-flex;
   display: flex;
   -webkit-flex-wrap: wrap;
   flex-wrap: wrap;
-  -webkit-justify-content: space-around;
-  justify-content: space-around;
+  -webkit-justify-content: center;
+  justify-content: center;
   -webkit-align-items: center;
   align-items: center;
+  gap: 18px;
 }
 
 .workspace .col {
@@ -83,9 +99,149 @@ body {
   display: inline-block;
 }
 
+.workspace .col.col-rush {
+  width: 130px;
+  display: flex;
+  justify-content: center;
+}
+
+.workspace .col.col-dict {
+  width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .workspace .col .dict {
   font-size: 96px;
   cursor: pointer;
+}
+
+.workspace .col .rush-panel {
+  width: 120px;
+  min-height: 76px;
+  padding: 10px 6px 8px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  opacity: 0.22;
+  transform: scale(0.96);
+  transition: opacity 180ms ease, transform 180ms ease, box-shadow 240ms ease, background 240ms ease;
+  box-shadow: none;
+}
+
+.workspace .col .rush-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.workspace .col .rush-panel.active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.workspace .col .rush-label {
+  font-size: 13px;
+  letter-spacing: 0.28em;
+  padding-left: 0.28em;
+  color: #666;
+}
+
+.workspace .col .rush-count {
+  line-height: 1;
+  font-size: 46px;
+  font-weight: 900;
+  color: #111;
+  text-shadow: 0 0 0 rgba(255, 255, 255, 0);
+}
+
+.workspace .col .rush-streak {
+  min-height: 24px;
+  margin-top: 2px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #8a3d00;
+  text-transform: uppercase;
+}
+
+.workspace .col .rush-burst {
+  min-height: 24px;
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #de3d00;
+  opacity: 0;
+}
+
+.workspace .col .rush-panel.is-pop .rush-count {
+  animation: rush-pop 520ms cubic-bezier(0.2, 0.9, 0.25, 1.3);
+}
+
+.workspace .col .rush-panel.is-glow .rush-count {
+  animation: rush-glow 700ms ease-out;
+}
+
+.workspace .col .rush-panel.is-slam .rush-count {
+  animation: rush-slam 560ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.workspace .col .rush-panel.is-hype .rush-streak {
+  animation: rush-hype 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.workspace .col .rush-panel.is-break .rush-streak {
+  animation: rush-break 520ms ease-out;
+}
+
+.workspace .col .rush-burst.is-float {
+  animation: rush-float 780ms ease-out;
+}
+
+.workspace .col .rush-burst.is-flash {
+  animation: rush-flash 680ms ease-out;
+}
+
+.workspace .col .rush-burst.is-spin {
+  animation: rush-spin 760ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.workspace .col .rush-panel.theme-base {
+  background: transparent;
+}
+
+.workspace .col .rush-panel.theme-hot {
+  background: transparent;
+  box-shadow: none;
+}
+
+.workspace .col .rush-panel.theme-hot::before {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 202, 112, 0.22), rgba(255, 255, 255, 0) 70%);
+  animation: rush-breathe-hot 2.2s ease-in-out infinite;
+}
+
+.workspace .col .rush-panel.theme-flare {
+  background: transparent;
+  box-shadow: none;
+}
+
+.workspace .col .rush-panel.theme-flare::before {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 130, 48, 0.24), rgba(255, 255, 255, 0) 70%);
+  animation: rush-breathe-flare 1.8s ease-in-out infinite;
+}
+
+.workspace .col .rush-panel.theme-legend {
+  background: transparent;
+  box-shadow: none;
+}
+
+.workspace .col .rush-panel.theme-legend::before {
+  background: radial-gradient(circle at 50% 48%, rgba(255, 108, 108, 0.28), rgba(255, 204, 61, 0.12) 45%, rgba(255, 255, 255, 0) 72%);
+  animation: rush-breathe-legend 1.35s ease-in-out infinite;
 }
 
 .workspace .col .row {
@@ -117,6 +273,19 @@ body {
 
 .workspace .col .row input:hover {
   border-bottom: solid #111;
+}
+
+@media screen and (max-width: 680px) {
+  .workspace {
+    max-width: 420px;
+    gap: 8px;
+  }
+
+  .workspace .col.col-rush {
+    width: 100%;
+    order: 3;
+    margin-top: 0;
+  }
 }
 
 /* keyboard */
@@ -338,6 +507,39 @@ body {
   border-bottom: dashed #ccc;
 }
 
+.dark-mode .workspace .col .rush-label {
+  color: #8fd3ff !important;
+}
+
+.dark-mode .workspace .col .rush-count {
+  color: #fff7a8 !important;
+  text-shadow: 0 0 18px rgba(255, 247, 168, 0.55);
+}
+
+.dark-mode .workspace .col .rush-streak {
+  color: #ffb86b !important;
+}
+
+.dark-mode .workspace .col .rush-burst {
+  color: #7cff9a !important;
+}
+
+.dark-mode .workspace .col .rush-panel.theme-base {
+  background: transparent !important;
+}
+
+.dark-mode .workspace .col .rush-panel.theme-hot {
+  box-shadow: none !important;
+}
+
+.dark-mode .workspace .col .rush-panel.theme-flare {
+  box-shadow: none !important;
+}
+
+.dark-mode .workspace .col .rush-panel.theme-legend {
+  box-shadow: none !important;
+}
+
 .dark-mode .keyboard .pic {
   filter: invert(0.8);
   background-color: unset !important;
@@ -369,4 +571,68 @@ body {
   .dark-mode .keyboard .keys * {
     background-color: transparent !important;
   }
+}
+
+@keyframes rush-pop {
+  0% { transform: scale(0.72) rotate(-10deg); }
+  55% { transform: scale(1.34) rotate(6deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes rush-glow {
+  0% { transform: scale(0.88); text-shadow: 0 0 0 rgba(255, 138, 0, 0); }
+  45% { transform: scale(1.26); text-shadow: 0 0 20px rgba(255, 138, 0, 0.9); }
+  100% { transform: scale(1); text-shadow: 0 0 0 rgba(255, 138, 0, 0); }
+}
+
+@keyframes rush-slam {
+  0% { transform: translateY(-18px) scale(1.45); }
+  45% { transform: translateY(4px) scale(0.92); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes rush-hype {
+  0% { transform: scale(0.85); letter-spacing: 0.02em; }
+  45% { transform: scale(1.22); letter-spacing: 0.2em; }
+  100% { transform: scale(1); letter-spacing: 0.12em; }
+}
+
+@keyframes rush-break {
+  0% { transform: translateX(0); opacity: 1; }
+  25% { transform: translateX(-8px); opacity: 0.85; }
+  50% { transform: translateX(8px); opacity: 0.7; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes rush-float {
+  0% { opacity: 0; transform: translateY(14px) scale(0.92); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-18px) scale(1.08); }
+}
+
+@keyframes rush-flash {
+  0% { opacity: 0; transform: scale(0.5); letter-spacing: 0.22em; }
+  18% { opacity: 1; transform: scale(1.25); }
+  100% { opacity: 0; transform: scale(1); letter-spacing: 0.08em; }
+}
+
+@keyframes rush-spin {
+  0% { opacity: 0; transform: rotate(-15deg) scale(0.7); }
+  22% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(8deg) scale(1.12); }
+}
+
+@keyframes rush-breathe-hot {
+  0%, 100% { opacity: 0.28; }
+  50% { opacity: 0.72; }
+}
+
+@keyframes rush-breathe-flare {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.82; }
+}
+
+@keyframes rush-breathe-legend {
+  0%, 100% { opacity: 0.34; }
+  50% { opacity: 0.9; }
 }

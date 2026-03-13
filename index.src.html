@@ -38,6 +38,11 @@
       <label for="dark-mode-switcher" class="title">夜间模式：</label>
       <input type="checkbox" id="dark-mode-switcher">
     </div>
+    <div class="menu menu-delay">
+      <label for="show-keys-delay" class="title">提示延时：</label>
+      <input type="number" id="show-keys-delay" min="0" max="9" step="1">
+      <span class="unit">秒</span>
+    </div>
     <div id="more-settings-switcher">展开更多</div>
   </div>
 
@@ -68,7 +73,15 @@
     </div>
   </div>
   <div class="workspace">
-    <div class="col">
+    <div class="col col-rush">
+      <div class="rush-panel" id="rush-panel">
+        <div class="rush-label">总命中</div>
+        <div class="rush-count" id="rush-count">0</div>
+        <div class="rush-streak" id="rush-streak">连续命中 x0</div>
+        <div class="rush-burst" id="rush-burst"></div>
+      </div>
+    </div>
+    <div class="col col-dict">
       <span class="dict" id="dict"></span>
     </div>
     <div class="col">

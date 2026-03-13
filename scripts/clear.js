@@ -3,6 +3,6 @@ const path = require('path')
 
 const BUILD_DIR = path.resolve(__dirname, '../build')
 
-fs.rmdirSync(BUILD_DIR, { recursive: true })
+fs.rmSync(BUILD_DIR, { recursive: true, force: true })
 
-console.log(`removed ${BUILD_DIR}`)
+console.log(`removed ${BUILD_DIR} if it existed`)

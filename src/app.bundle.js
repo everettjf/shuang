@@ -938,10 +938,11 @@ Shuang.core.model = class Model {
 
 Shuang.app.setting = {
   config: {},
+  keysHintDelayTimer: null,
   reload() {
     /** Reading Storage or Using Default **/
     this.config = {
-      scheme: readStorage('scheme') || 'ziranma',
+      scheme: readStorage('scheme') || 'xiaohe',
       mode: readStorage('mode') || 'all-random',
       keyboardLayout: readStorage('keyboardLayout') || 'qwerty',
       showPic: readStorage('showPic') || 'true',
@@ -949,12 +950,13 @@ Shuang.app.setting = {
       autoNext: readStorage('autoNext') || 'true',
       autoClear: readStorage('autoClear') || 'true',
       showKeys: readStorage("showKeys") || "true",
+      showKeysDelay: readStorage('showKeysDelay') || '3',
       showPressedKey: readStorage("showPressedKey") || "true",
       disableMobileKeyboard: readStorage("disableMobileKeyboard") || "false",
       bopomofo: readStorage("bopomofo") || "false",
     }
     /** Applying Settings :: Changing UI **/
-    const { scheme, mode, keyboardLayout, showPic, darkMode, autoNext, autoClear, showKeys, showPressedKey, disableMobileKeyboard, bopomofo } = this.config
+    const { scheme, mode, keyboardLayout, showPic, darkMode, autoNext, autoClear, showKeys, showKeysDelay, showPressedKey, disableMobileKeyboard, bopomofo } = this.config
     Array.prototype.find.call($('#scheme-select').children,
       schemeOption => Shuang.resource.schemeList[scheme].startsWith(schemeOption.innerText)
     ).selected = true
@@ -965,6 +967,7 @@ Shuang.app.setting = {
     $('#auto-next-switcher').checked = autoNext === 'true'
     $('#auto-clear-switcher').checked = autoClear === 'true'
     $('#show-keys').checked = showKeys === 'true'
+    $('#show-keys-delay').value = showKeysDelay
     $('#show-pressed-key').checked = showPressedKey === 'true'
     $('#disable-mobile-keyboard').checked = disableMobileKeyboard === 'true'
     $('#bopomofo-switcher').checked = bopomofo === 'true'
@@ -1043,6 +1046,13 @@ Shuang.app.setting = {
     writeStorage('showKeys', this.config.showKeys)
     this.updateKeysHint()
   },
+  setShowKeysDelay(value) {
+    const delay = Math.max(0, Math.min(9, Number.parseInt(value, 10) || 0))
+    this.config.showKeysDelay = delay.toString()
+    $('#show-keys-delay').value = this.config.showKeysDelay
+    writeStorage('showKeysDelay', this.config.showKeysDelay)
+    this.updateKeysHint()
+  },
   setShowPressedKey(bool) {
     this.config.showPressedKey = bool.toString()
     writeStorage('showPressedKey', this.config.showPressedKey)
@@ -1075,21 +1085,30 @@ Shuang.app.setting = {
     if (!Shuang.resource.keyboardLayout[this.config.keyboardLayout]) return
     this.updateSimulateKeyboard()
     this.updateKeysHintLayoutRatio()
+    if (this.keysHintDelayTimer) {
+      clearTimeout(this.keysHintDelayTimer)
+      this.keysHintDelayTimer = null
+    }
     const keys = $$('.key')
     for (const key of keys) {
       key.classList.remove('answer')
     }
+    const delayMs = (Number.parseInt(this.config.showKeysDelay, 10) || 0) * 1000
+    Shuang.app.action.syncQuickHitWindow(delayMs)
     if (this.config.showKeys === 'false') return
-    const answerKeys = new Set()
-    for (const [sheng, yun] of Shuang.core.current.scheme) {
-      answerKeys.add(sheng)
-      answerKeys.add(yun)
-    }
-    for (const key of keys) {
-      if (answerKeys.has(key.getAttribute('key').toLowerCase())) {
-        key.classList.add('answer')
+    this.keysHintDelayTimer = setTimeout(() => {
+      const answerKeys = new Set()
+      for (const [sheng, yun] of Shuang.core.current.scheme) {
+        answerKeys.add(sheng)
+        answerKeys.add(yun)
       }
-    }
+      for (const key of keys) {
+        if (answerKeys.has(key.getAttribute('key').toLowerCase())) {
+          key.classList.add('answer')
+        }
+      }
+      this.keysHintDelayTimer = null
+    }, delayMs)
   },
   updateKeysHintLayoutRatio() {
     if ($('body').scrollWidth < 700) {
@@ -1217,6 +1236,13 @@ function writeStorage(key = '', value = '') { localStorage.setItem(key, value) }
 /** last changed: 2025.1.9 */
 
 Shuang.app.action = {
+  quickHitCount: 0,
+  quickHitStreak: 0,
+  quickHitBestStreak: 0,
+  quickHitDeadline: 0,
+  quickHitExpireTimer: null,
+  quickHitLocked: false,
+  quickHitResolved: false,
   init() {
     /** Update Resources **/
     if (navigator && navigator.userAgent && /windows|linux/i.test(navigator.userAgent)) {
@@ -1292,6 +1318,9 @@ Shuang.app.action = {
     $('#show-keys').addEventListener('change', e => {
       Shuang.app.setting.setShowKeys(e.target.checked)
     })
+    $('#show-keys-delay').addEventListener('change', e => {
+      Shuang.app.setting.setShowKeysDelay(e.target.value)
+    })
     $('#dark-mode-switcher').addEventListener('change', e => {
       Shuang.app.setting.setDarkMode(e.target.checked)
     })
@@ -1364,6 +1393,7 @@ Shuang.app.action = {
     }
 
     /** All Done **/
+    this.updateQuickHitPanel()
     Shuang.app.setting.updateQAndDict()
     this.redo()
   },
@@ -1412,6 +1442,7 @@ Shuang.app.action = {
     const btn = $('#btn')
     const [sheng, yun] = input.value
     if (yun && Shuang.core.current.judge(sheng, yun)) {
+      this.registerQuickHit()
       btn.onclick = () => this.next(true)
       btn.innerText = Shuang.resource.emoji.right
       return true
@@ -1458,6 +1489,126 @@ Shuang.app.action = {
   },
   qrHide(target) {
     target.style.display = 'none'
+  },
+  updateQuickHitPanel() {
+    const panel = $('#rush-panel')
+    const enabled = (Number.parseInt(Shuang.app.setting.config.showKeysDelay, 10) || 0) > 0
+    panel.classList.toggle('active', enabled)
+    panel.classList.remove('theme-base', 'theme-hot', 'theme-flare', 'theme-legend')
+    panel.classList.add(this.getQuickHitThemeClass())
+    $('#rush-count').innerText = this.quickHitCount
+    $('#rush-streak').innerText = this.getQuickHitStreakLabel()
+    if (!enabled) {
+      this.quickHitStreak = 0
+      this.quickHitBestStreak = 0
+      this.quickHitDeadline = 0
+      if (this.quickHitExpireTimer) {
+        clearTimeout(this.quickHitExpireTimer)
+        this.quickHitExpireTimer = null
+      }
+      this.quickHitLocked = false
+      this.quickHitResolved = false
+      $('#rush-burst').innerText = ''
+      $('#rush-streak').innerText = '连续命中 x0'
+    }
+  },
+  syncQuickHitWindow(delayMs = 0) {
+    if (this.quickHitExpireTimer) {
+      clearTimeout(this.quickHitExpireTimer)
+      this.quickHitExpireTimer = null
+    }
+    this.quickHitLocked = false
+    this.quickHitResolved = false
+    this.quickHitDeadline = delayMs > 0 ? Date.now() + delayMs : 0
+    if (delayMs > 0) {
+      this.quickHitExpireTimer = setTimeout(() => {
+        this.markQuickHitTimeout()
+      }, delayMs)
+    }
+    this.updateQuickHitPanel()
+  },
+  registerQuickHit() {
+    if (this.quickHitLocked || !this.quickHitDeadline) return
+    if (Date.now() > this.quickHitDeadline) {
+      this.markQuickHitTimeout()
+      return
+    }
+    if (this.quickHitExpireTimer) {
+      clearTimeout(this.quickHitExpireTimer)
+      this.quickHitExpireTimer = null
+    }
+    this.quickHitLocked = true
+    this.quickHitResolved = true
+    this.quickHitCount ++
+    this.quickHitStreak ++
+    this.quickHitBestStreak = Math.max(this.quickHitBestStreak, this.quickHitStreak)
+    this.playQuickHitAnimation(true)
+    this.updateQuickHitPanel()
+  },
+  markQuickHitTimeout() {
+    if (!this.quickHitDeadline || this.quickHitResolved) return
+    if (this.quickHitExpireTimer) {
+      clearTimeout(this.quickHitExpireTimer)
+      this.quickHitExpireTimer = null
+    }
+    this.quickHitResolved = true
+    this.quickHitLocked = true
+    if (this.quickHitStreak > 0) {
+      this.quickHitStreak = 0
+      this.playQuickHitAnimation(false)
+    } else {
+      this.updateQuickHitPanel()
+    }
+  },
+  playQuickHitAnimation(isHit) {
+    const panel = $('#rush-panel')
+    const burst = $('#rush-burst')
+    const countAnimation = ['is-pop', 'is-glow', 'is-slam'][Math.floor(Math.random() * 3)]
+    const burstAnimation = ['is-float', 'is-flash', 'is-spin'][Math.floor(Math.random() * 3)]
+    const hypeClass = isHit ? 'is-hype' : 'is-break'
+    const burstText = isHit
+      ? this.getQuickHitBurstText()
+      : '断连'
+
+    panel.classList.remove('is-pop', 'is-glow', 'is-slam', 'is-hype', 'is-break')
+    burst.classList.remove('is-float', 'is-flash', 'is-spin')
+    burst.innerText = ''
+
+    void panel.offsetWidth
+    void burst.offsetWidth
+
+    panel.classList.add(hypeClass)
+    if (isHit) panel.classList.add(countAnimation)
+    burst.innerText = isHit ? `+1 ${burstText}` : burstText
+    burst.classList.add(burstAnimation)
+
+    setTimeout(() => {
+      panel.classList.remove(countAnimation, hypeClass)
+      burst.classList.remove(burstAnimation)
+    }, 900)
+  },
+  getQuickHitBurstText() {
+    if (this.quickHitStreak >= 10) {
+      const labels = ['火力全开', '十连暴击', '无情连杀', '手感滚烫']
+      return labels[Math.floor(Math.random() * labels.length)]
+    }
+    if (this.quickHitStreak >= 5) {
+      const labels = ['五连起飞', '节奏拉满', '持续压制', '进入状态']
+      return labels[Math.floor(Math.random() * labels.length)]
+    }
+    const labels = ['漂亮', '拿下', '秒了', '真快', '连中', '继续冲']
+    return labels[Math.floor(Math.random() * labels.length)]
+  },
+  getQuickHitStreakLabel() {
+    if (this.quickHitStreak >= 10) return `连续命中 x${this.quickHitStreak} 传奇`
+    if (this.quickHitStreak >= 5) return `连续命中 x${this.quickHitStreak} 暴走`
+    return `连续命中 x${this.quickHitStreak}`
+  },
+  getQuickHitThemeClass() {
+    if (this.quickHitStreak >= 10) return 'theme-legend'
+    if (this.quickHitStreak >= 5) return 'theme-flare'
+    if (this.quickHitStreak >= 3) return 'theme-hot'
+    return 'theme-base'
   },
   toggleMoreSettingsVisible() {
     $('#more-settings').style.display = $('#more-settings').style.display === 'block' ? 'none' : 'block'
