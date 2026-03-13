@@ -83,6 +83,15 @@ v6.0 2025.01.09 更新
 3. 运行 `npm run build` 来构建产物
 4. 提交代码
 
+### 部署到 GitHub Pages
+
+1. 先在 GitHub 仓库设置中打开 Pages，并将 Source 设置为 `Deploy from a branch`
+2. Branch 选择 `gh-pages`，目录选择 `/ (root)`
+3. 在仓库根目录运行 `./deploy.sh`
+4. 脚本会自动执行构建，并把 `index.html`、`build/`、`img/`、`assets/` 发布到 `gh-pages` 分支
+
+如果脚本没有执行权限，可以先运行 `chmod +x deploy.sh`
+
 ### 修改键位图
 
 1. 修改 [keyboard/scheme/*.js](keyboard/scheme/) 键位图配置
