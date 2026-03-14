@@ -1,0 +1,46 @@
+{
+  "beforeReload": {
+    "records": [
+      {
+        "streak": "x4",
+        "time": "2026-03-13 21:45:28"
+      },
+      {
+        "streak": "x3",
+        "time": "2026-03-13 21:45:28"
+      },
+      {
+        "streak": "x2",
+        "time": "2026-03-13 21:45:27"
+      },
+      {
+        "streak": "x1",
+        "time": "2026-03-13 21:45:27"
+      }
+    ],
+    "streakLabel": "连续命中 x4",
+    "count": "4",
+    "storage": "[{\"streak\":4,\"timestamp\":1773463528402},{\"streak\":3,\"timestamp\":1773463528178},{\"streak\":2,\"timestamp\":1773463527953},{\"streak\":1,\"timestamp\":1773463527701}]"
+  },
+  "afterReload": {
+    "records": [
+      {
+        "streak": "x4",
+        "time": "2026-03-13 21:45:28"
+      },
+      {
+        "streak": "x3",
+        "time": "2026-03-13 21:45:28"
+      },
+      {
+        "streak": "x2",
+        "time": "2026-03-13 21:45:27"
+      },
+      {
+        "streak": "x1",
+        "time": "2026-03-13 21:45:27"
+      }
+    ],
+    "storage": "[{\"streak\":4,\"timestamp\":1773463528402},{\"streak\":3,\"timestamp\":1773463528178},{\"streak\":2,\"timestamp\":1773463527953},{\"streak\":1,\"timestamp\":1773463527701}]"
+  }
+}

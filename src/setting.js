@@ -295,3 +295,4 @@ function detectDarkMode() {
 
 function readStorage(key = '') { return localStorage.getItem(key) }
 function writeStorage(key = '', value = '') { localStorage.setItem(key, value) }
+function removeStorage(key = '') { localStorage.removeItem(key) }

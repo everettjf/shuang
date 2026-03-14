@@ -1,13 +1,17 @@
 /** last changed: 2025.1.9 */
 
 Shuang.app.action = {
+  quickHitRecordStorageKey: 'quickHitRecordHistory',
+  quickHitRecordLimit: 20,
   quickHitCount: 0,
   quickHitStreak: 0,
   quickHitBestStreak: 0,
+  quickHitRecordBestStreak: 0,
   quickHitDeadline: 0,
   quickHitExpireTimer: null,
   quickHitLocked: false,
   quickHitResolved: false,
+  quickHitRecords: [],
   init() {
     /** Update Resources **/
     if (navigator && navigator.userAgent && /windows|linux/i.test(navigator.userAgent)) {
@@ -61,6 +65,8 @@ Shuang.app.action = {
     /** Setting First Question **/
     Shuang.core.current = new Shuang.core.model('sh', 'uang')
 
+    this.loadQuickHitRecords()
+
     /** Reset Configs **/
     Shuang.app.setting.reload()
 
@@ -106,6 +112,9 @@ Shuang.app.action = {
     })
     $('#bopomofo-switcher').addEventListener('change', e => {
       Shuang.app.setting.setBopomofo(e.target.checked)
+    })
+    $('#rush-records-clear').addEventListener('click', () => {
+      this.clearQuickHitRecords()
     })
     $('.pay-name#alipay').addEventListener('mouseover', () => {
       Shuang.app.action.qrShow('alipay-qr')
@@ -277,6 +286,89 @@ Shuang.app.action = {
       $('#rush-streak').innerText = '连续命中 x0'
     }
   },
+  loadQuickHitRecords() {
+    const records = this.readQuickHitRecords()
+    this.quickHitRecords = records
+    this.quickHitRecordBestStreak = records.reduce((best, record) => {
+      return Math.max(best, record.streak)
+    }, 0)
+    this.renderQuickHitRecords()
+  },
+  readQuickHitRecords() {
+    const raw = readStorage(this.quickHitRecordStorageKey)
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed)) return []
+      return parsed
+        .map(record => ({
+          streak: Number.parseInt(record.streak, 10) || 0,
+          timestamp: Number.parseInt(record.timestamp, 10) || 0
+        }))
+        .filter(record => record.streak > 0 && record.timestamp > 0)
+        .slice(0, this.quickHitRecordLimit)
+    } catch (e) {
+      return []
+    }
+  },
+  persistQuickHitRecords() {
+    writeStorage(this.quickHitRecordStorageKey, JSON.stringify(this.quickHitRecords))
+  },
+  recordQuickHitBreakthrough() {
+    const record = {
+      streak: this.quickHitStreak,
+      timestamp: Date.now()
+    }
+    this.quickHitRecords = [record, ...this.quickHitRecords].slice(0, this.quickHitRecordLimit)
+    this.quickHitRecordBestStreak = record.streak
+    this.persistQuickHitRecords()
+    this.renderQuickHitRecords()
+  },
+  renderQuickHitRecords() {
+    const list = $('#rush-record-list')
+    const clearButton = $('#rush-records-clear')
+    if (!list) return
+    list.innerHTML = ''
+    if (clearButton) {
+      clearButton.disabled = this.quickHitRecords.length === 0
+    }
+    if (!this.quickHitRecords.length) {
+      const empty = document.createElement('div')
+      empty.className = 'rush-record-empty'
+      empty.innerText = '还没有突破记录'
+      list.appendChild(empty)
+      return
+    }
+    for (const record of this.quickHitRecords) {
+      const item = document.createElement('div')
+      const streak = document.createElement('div')
+      const time = document.createElement('div')
+      item.className = 'rush-record-item'
+      streak.className = 'rush-record-streak'
+      time.className = 'rush-record-time'
+      streak.innerText = `x${record.streak}`
+      time.innerText = this.formatQuickHitRecordTime(record.timestamp)
+      item.appendChild(streak)
+      item.appendChild(time)
+      list.appendChild(item)
+    }
+  },
+  clearQuickHitRecords() {
+    if (!this.quickHitRecords.length) return
+    if (!window.confirm('确认清空破纪录历史吗？')) return
+    this.quickHitRecords = []
+    this.quickHitRecordBestStreak = 0
+    removeStorage(this.quickHitRecordStorageKey)
+    this.renderQuickHitRecords()
+  },
+  formatQuickHitRecordTime(timestamp) {
+    const date = new Date(timestamp)
+    const pad = (value) => value.toString().padStart(2, '0')
+    return [
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+      `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+    ].join(' ')
+  },
   syncQuickHitWindow(delayMs = 0) {
     if (this.quickHitExpireTimer) {
       clearTimeout(this.quickHitExpireTimer)
@@ -306,6 +398,9 @@ Shuang.app.action = {
     this.quickHitResolved = true
     this.quickHitCount ++
     this.quickHitStreak ++
+    if (this.quickHitStreak > this.quickHitRecordBestStreak) {
+      this.recordQuickHitBreakthrough()
+    }
     this.quickHitBestStreak = Math.max(this.quickHitBestStreak, this.quickHitStreak)
     this.playQuickHitAnimation(true)
     this.updateQuickHitPanel()
