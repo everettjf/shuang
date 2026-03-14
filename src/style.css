@@ -125,7 +125,7 @@ body {
 }
 
 .workspace .col .rush-panel {
-  width: 160px;
+  width: 180px;
   min-height: 76px;
   padding: 10px 6px 8px;
   position: relative;
@@ -168,11 +168,13 @@ body {
 .workspace .col .rush-streak {
   min-height: 24px;
   margin-top: 2px;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.04em;
   color: #8a3d00;
   text-transform: uppercase;
+  white-space: nowrap;
+  word-break: keep-all;
 }
 
 .workspace .col .rush-burst {
