@@ -1,0 +1,29 @@
+{
+  "answers": [
+    "ul",
+    "fw",
+    "bh",
+    "qu",
+    "jn"
+  ],
+  "duringCombo": {
+    "streakLabel": "连续命中 X5 暴走",
+    "records": [
+      "x2"
+    ],
+    "storage": "[{\"streak\":2,\"timestamp\":1773635048947}]"
+  },
+  "afterTimeout": {
+    "streakLabel": "连续命中 X0",
+    "records": [
+      "x5",
+      "x2"
+    ],
+    "times": [
+      "2026-03-15 21:25:12",
+      "2026-03-15 21:24:08"
+    ],
+    "storage": "[{\"streak\":5,\"timestamp\":1773635112870},{\"streak\":2,\"timestamp\":1773635048947}]"
+  },
+  "consoleErrors": []
+}

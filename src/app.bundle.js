@@ -1243,6 +1243,7 @@ Shuang.app.action = {
   quickHitStreak: 0,
   quickHitBestStreak: 0,
   quickHitRecordBestStreak: 0,
+  quickHitPendingRecordStreak: 0,
   quickHitDeadline: 0,
   quickHitExpireTimer: null,
   quickHitLocked: false,
@@ -1509,8 +1510,10 @@ Shuang.app.action = {
     $('#rush-count').innerText = this.quickHitCount
     $('#rush-streak').innerText = this.getQuickHitStreakLabel()
     if (!enabled) {
+      this.flushQuickHitRecord()
       this.quickHitStreak = 0
       this.quickHitBestStreak = 0
+      this.quickHitPendingRecordStreak = 0
       this.quickHitDeadline = 0
       if (this.quickHitExpireTimer) {
         clearTimeout(this.quickHitExpireTimer)
@@ -1550,15 +1553,20 @@ Shuang.app.action = {
   persistQuickHitRecords() {
     writeStorage(this.quickHitRecordStorageKey, JSON.stringify(this.quickHitRecords))
   },
-  recordQuickHitBreakthrough() {
+  recordQuickHitBreakthrough(streak = this.quickHitPendingRecordStreak) {
+    if (streak <= this.quickHitRecordBestStreak) return
     const record = {
-      streak: this.quickHitStreak,
+      streak,
       timestamp: Date.now()
     }
     this.quickHitRecords = [record, ...this.quickHitRecords].slice(0, this.quickHitRecordLimit)
     this.quickHitRecordBestStreak = record.streak
     this.persistQuickHitRecords()
     this.renderQuickHitRecords()
+  },
+  flushQuickHitRecord() {
+    this.recordQuickHitBreakthrough()
+    this.quickHitPendingRecordStreak = 0
   },
   renderQuickHitRecords() {
     const list = $('#rush-record-list')
@@ -1634,9 +1642,7 @@ Shuang.app.action = {
     this.quickHitResolved = true
     this.quickHitCount ++
     this.quickHitStreak ++
-    if (this.quickHitStreak > this.quickHitRecordBestStreak) {
-      this.recordQuickHitBreakthrough()
-    }
+    this.quickHitPendingRecordStreak = Math.max(this.quickHitPendingRecordStreak, this.quickHitStreak)
     this.quickHitBestStreak = Math.max(this.quickHitBestStreak, this.quickHitStreak)
     this.playQuickHitAnimation(true)
     this.updateQuickHitPanel()
@@ -1650,8 +1656,10 @@ Shuang.app.action = {
     this.quickHitResolved = true
     this.quickHitLocked = true
     if (this.quickHitStreak > 0) {
+      this.flushQuickHitRecord()
       this.quickHitStreak = 0
       this.playQuickHitAnimation(false)
+      this.updateQuickHitPanel()
     } else {
       this.updateQuickHitPanel()
     }
